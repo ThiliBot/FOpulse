@@ -2,7 +2,7 @@
   'use strict';
 
   const BASE = window.location.origin;
-  const PAGE_SIZE = 40;
+  const PAGE_SIZE = 100;
 
   const $ = (sel, root = document) => root.querySelector(sel);
 
