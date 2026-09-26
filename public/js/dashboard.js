@@ -137,27 +137,26 @@
     fSector.value = current || '';
   }
 
-  function renderDateTabs() {
+    function renderDateTabs() {
     if (!tabsEl) return;
-    const total = state.dates.reduce((s, d) => s + (Number(d.count) || 0), 0);
-    const tabs = [{ date: '', count: total, label: `All public (${total})` }].concat(
-      state.dates.map((d) => ({
-        date: d.date,
-        count: d.count,
-        label: `${d.date} (${d.count})`
-      }))
-    );
-    tabsEl.innerHTML = tabs
+    tabsEl.innerHTML = state.dates
       .map(
-        (t) =>
-          `<button type="button" class="sp-date-tab${t.date === state.date ? ' active' : ''}" data-date="${t.date}">${t.label}</button>`
+        (d) =>
+          `<button type="button" class="sp-date-tab${d.date === state.date ? ' active' : ''}" data-date="${d.date}">${d.date} (${d.count})</button>`
       )
       .join('');
     tabsEl.querySelectorAll('.sp-date-tab').forEach((btn) => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         state.date = btn.getAttribute('data-date') || '';
         renderDateTabs();
-        render(filtered());
+        try {
+          if (statusEl) statusEl.textContent = `Loading ${state.date}…`;
+          state.raw = await fetchAllPages(state.date);
+          fillSectors(state.raw);
+          render(filtered());
+        } catch (err) {
+          if (statusEl) statusEl.textContent = err.message;
+        }
       });
     });
   }
@@ -280,6 +279,7 @@
   }
 
   async function fetchAllPages(date) {
+	if (!date) return [];
     const rows = [];
     let page = 1;
     let total = Infinity;
@@ -301,29 +301,24 @@
     return rows;
   }
 
-  async function loadAllPublicTriggers() {
-    if (statusEl) statusEl.textContent = 'Loading public archive…';
+    async function loadDatesThenSelectedDay() {
+    if (statusEl) statusEl.textContent = 'Loading dates…';
     const datesJson = await fetchJson(
       `${BASE}/triggers/dates?minChange=${encodeURIComponent(state.minChange)}`
     );
     state.delayDays = datesJson.delayDays || 30;
     state.dates = datesJson.dates || [];
+    state.date = state.dates.length
+      ? state.dates[state.dates.length - 1].date
+      : '';
     renderDateTabs();
-
-    const all = [];
-    for (const day of state.dates) {
-      if (statusEl) statusEl.textContent = `Loading ${day.date}…`;
-      all.push(...(await fetchAllPages(day.date)));
+    if (!state.date) {
+      state.raw = [];
+      render([]);
+      return;
     }
-
-    const seen = new Set();
-    state.raw = all.filter((row) => {
-      const id = String(row._id || `${row.symbol}-${row.strikePrice}-${row.triggerEndTime}`);
-      if (seen.has(id)) return false;
-      seen.add(id);
-      return true;
-    });
-
+    if (statusEl) statusEl.textContent = `Loading ${state.date}…`;
+    state.raw = await fetchAllPages(state.date);
     fillSectors(state.raw);
     render(filtered());
   }
@@ -341,7 +336,7 @@
     setInterval(tickClock, 1000);
     try {
       readFilters();
-      await loadAllPublicTriggers();
+      await loadDatesThenSelectedDay();
     } catch (err) {
       if (statusEl) statusEl.textContent = 'Could not load triggers: ' + err.message;
     }
@@ -351,7 +346,7 @@
     btnRefresh.addEventListener('click', async () => {
       readFilters();
       try {
-        await loadAllPublicTriggers();
+        await loadDatesThenSelectedDay();
       } catch (err) {
         if (statusEl) statusEl.textContent = err.message;
       }
