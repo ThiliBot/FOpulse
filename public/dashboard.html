@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Session Pulse — Options Intraday</title>
+  <link rel="stylesheet" href="/css/dashboard.css" />
+  <link rel="stylesheet" href="/css/theme.css" />
+  <style>
+    .sp-date-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .sp-date-tab {
+      padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      background: #0f1730; color: var(--sp-muted, #94a3b8);
+      border: 1px solid var(--sp-border, #1e293b);
+      cursor: pointer; transition: all .15s ease; white-space: nowrap;
+    }
+    .sp-date-tab:hover { border-color: rgba(94,234,212,.4); color: var(--sp-text, #e5e7eb); }
+    .sp-date-tab.active {
+      background: rgba(94,234,212,.1);
+      border-color: var(--sp-accent, #5eead4);
+      color: var(--sp-accent, #5eead4);
+    }
+    .sp-top-item {
+      display: grid;
+      grid-template-columns: 28px 1fr auto 140px;
+      gap: 10px; align-items: center;
+      padding: 8px 0;
+    }
+    .sp-rank {
+      width: 24px; height: 24px; border-radius: 999px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; background: #0f1730;
+    }
+    .sp-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 36px; padding: 2px 8px; border-radius: 999px;
+      font-size: 11px; font-weight: 700;
+    }
+    .sp-badge.ce { background: rgba(45,212,191,.15); color: #5eead4; }
+    .sp-badge.pe { background: rgba(251,146,60,.15); color: #fb923c; }
+    .sp-row {
+      display: grid;
+      grid-template-columns: 72px 48px 110px 120px 90px 80px minmax(90px, 1fr);
+      gap: 8px; align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--sp-border, #1e293b);
+    }
+    @media (max-width: 800px) {
+      .sp-row, .sp-top-item { grid-template-columns: 1fr 1fr; }
+    }
+    .sp-chg.up { color: #34d399; }
+    .sp-chg.down { color: #f87171; }
+    .sp-chg-pill {
+      display: inline-block; padding: 3px 8px; border-radius: 8px; font-weight: 700; font-size: 12px;
+    }
+    .sp-chg-pill.up { background: rgba(52,211,153,.15); color: #34d399; }
+    .sp-chg-pill.down { background: rgba(248,113,113,.15); color: #f87171; }
+    .sp-group h3 small { color: var(--sp-muted, #94a3b8); font-weight: 500; margin-left: 8px; }
+    .sp-spark { width: 100%; height: 28px; display: block; }
+    .sp-spark .line { fill: none; stroke: currentColor; stroke-width: 1.6; }
+    .sp-spark.up { color: #34d399; }
+    .sp-spark.down { color: #f87171; }
+  </style>
+</head>
+<body class="session-pulse">
+
+  <header class="sp-header">
+    <div class="sp-brand">
+      <span class="sp-dot" aria-hidden="true"></span>
+      <h1>Session Pulse</h1>
+      <span class="sp-subtitle">Options Intraday Pressure</span>
+    </div>
+    <div class="sp-clock" role="timer" aria-label="IST time and session window">
+      <time id="ist-time">--:--:--</time>
+      <span id="ist-window" class="sp-window">—</span>
+    </div>
+    <button type="button" class="sp-theme-btn" data-theme-toggle>Dark</button>
+  </header>
+
+  <main class="sp-main">
+
+    <section aria-label="Select date">
+      <h2 class="sp-section-title" style="margin-bottom:10px;">Available Dates</h2>
+      <div id="date-tabs" class="sp-date-tabs"></div>
+    </section>
+
+    <section class="sp-hero" aria-label="Top movers and market summary">
+      <div class="sp-pulse-ring" id="pulse-ring" aria-hidden="true"></div>
+      <h2 class="sp-section-title">Top 5 by Score</h2>
+      <ol class="sp-top-list" id="top-list" role="list"></ol>
+      <hr class="sp-divider" />
+      <dl class="sp-metrics" aria-label="Aggregate metrics">
+        <div class="sp-metric"><dt>Symbols</dt><dd id="m-symbols">0</dd></div>
+        <div class="sp-metric"><dt>Triggers</dt><dd id="m-triggers">0</dd></div>
+        <div class="sp-metric"><dt>Total Vol</dt><dd id="m-volume">0</dd></div>
+        <div class="sp-metric"><dt>CE</dt><dd id="m-ce" class="sp-val-ce">0</dd></div>
+        <div class="sp-metric"><dt>PE</dt><dd id="m-pe" class="sp-val-pe">0</dd></div>
+      </dl>
+    </section>
+
+    <section class="sp-controls" aria-label="Filters and sort">
+      <label class="sp-field">
+        <span>Min Δ%</span>
+        <input id="f-min-change" type="number" value="5" min="0" step="1" inputmode="numeric" />
+      </label>
+      <label class="sp-field">
+        <span>Min Vol</span>
+        <select id="f-min-vol">
+          <option value="0" selected>All</option>
+          <option value="50000">≥ 50 K</option>
+          <option value="100000">≥ 1 L</option>
+          <option value="500000">≥ 5 L</option>
+        </select>
+      </label>
+      <label class="sp-field">
+        <span>Sector</span>
+        <select id="f-sector"><option value="">All</option></select>
+      </label>
+      <label class="sp-field">
+        <span>Type</span>
+        <select id="f-type">
+          <option value="">All</option>
+          <option value="CE">CE</option>
+          <option value="PE">PE</option>
+        </select>
+      </label>
+      <label class="sp-field">
+        <span>Sort by</span>
+        <select id="f-sort">
+          <option value="score" selected>Score</option>
+          <option value="abs">|Δ%|</option>
+          <option value="volume">Volume</option>
+          <option value="time">Newest</option>
+        </select>
+      </label>
+      <button id="btn-refresh" class="sp-btn" type="button">Refresh</button>
+    </section>
+
+    <section class="sp-groups" aria-label="Symbols by underlying">
+      <div id="groups-root"></div>
+    </section>
+
+    <footer class="sp-status" role="status" aria-live="polite">
+      <span id="status-text">Loading…</span>
+    </footer>
+  </main>
+
+  <script src="/js/dashboard.js" defer></script>
+  <script src="/js/theme.js"></script>
+</body>
+</html>

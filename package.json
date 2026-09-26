@@ -1,0 +1,32 @@
+{
+  "name": "angel-one-smartapi",
+  "version": "1.0.0",
+  "description": "Angel One SmartAPI Token Management Module with automatic token refresh",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js"
+  },
+  "keywords": [
+    "angel-one",
+    "smartapi",
+    "stock-api",
+    "token-management",
+    "trading-api"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.24.2",
+    "morgan": "^1.11.0",
+    "node-cron": "4.6.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

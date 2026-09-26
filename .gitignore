@@ -1,0 +1,24 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# deps
+node_modules/
+
+# aider / editors
+.aider*
+.idea/
+.vscode/
+*.swp
+
+# runtime / broker
+data/tokens.json
+data/OpenAPIScripMaster.json
+data/equity_option_expiries.json
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db

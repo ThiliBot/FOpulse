@@ -1,0 +1,19 @@
+[
+  {
+    "instrumentName": "string",
+    "symbol": "string",
+    "instrumentSector": "string",
+    "volume": 0,
+    "expiry": "string",
+    "strikePrice": 0,
+    "optionType": "CE | PE",
+    "generatedTime": "2026-07-30T10:30:00+05:30",
+    "triggerStartTime": "2026-07-30T10:15:00+05:30",
+    "triggerEndTime": "2026-07-30T10:30:00+05:30",
+    "triggerStartPrice": 0.0,
+    "triggerEndPrice": 0.0,
+    "changePercent": 0.0,
+    "priceSequence": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  }
+]
+

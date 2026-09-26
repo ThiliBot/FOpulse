@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Session Pulse — Test UI</title>
+  <link rel="stylesheet" href="/css/theme.css" />
+  <link rel="stylesheet" href="/css/dashboard.css" />
+  <style>
+    body.session-pulse { margin: 0; }
+    .test-grid {
+      display: grid;
+      gap: 12px;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 12px 16px 32px;
+    }
+    .log {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      background: var(--sp-input, #0f1730);
+      border: 1px solid var(--sp-border);
+      border-radius: 10px;
+      padding: 12px;
+      min-height: 200px;
+      white-space: pre-wrap;
+      color: var(--sp-text);
+      max-height: 420px;
+      overflow: auto;
+    }
+    .row-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .log .ok { color: var(--sp-up, #22c55e); }
+    .log .err { color: var(--sp-down, #ef4444); }
+    .log .info { color: var(--sp-muted, #9aa6cf); }
+  </style>
+</head>
+<body class="session-pulse">
+  <header class="sp-header">
+    <div class="sp-brand">
+      <span class="sp-dot" aria-hidden="true"></span>
+      <h1>Test UI</h1>
+      <span class="sp-subtitle">Login · triggers · diagnostics</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <a class="sp-btn" href="/dashboard.html">Dashboard</a>
+      <a class="sp-btn" href="/admin-dashboard.html">Admin</a>
+      <a class="sp-btn" href="/status.html">Status</a>
+      <button type="button" class="sp-theme-btn" data-theme-toggle>Dark</button>
+    </div>
+  </header>
+
+  <main class="test-grid">
+    <section class="sp-panel">
+      <label class="sp-field">
+        <span>TOTP (from authenticator)</span>
+        <input
+          id="totp"
+          class="sp-input"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          placeholder="6-digit code"
+          maxlength="6"
+        />
+      </label>
+      <div class="row-actions" style="margin-top:10px;">
+        <button type="button" class="sp-btn" id="btn-login">Login</button>
+        <button type="button" class="sp-btn" id="btn-status">Check status</button>
+        <button type="button" class="sp-btn" id="btn-run">Run triggers</button>
+        <button type="button" class="sp-btn sp-btn-danger" id="btn-logout">Logout</button>
+      </div>
+      <p class="sp-muted" id="loginStatus" style="margin:10px 0 0;">Not logged in</p>
+    </section>
+
+    <section class="sp-panel">
+      <div class="sp-muted" style="margin-bottom:8px;">Logs</div>
+      <div id="log" class="log">Ready.</div>
+    </section>
+  </main>
+
+  <script src="/js/theme.js"></script>
+  <script>
+    (() => {
+      'use strict';
+
+      const BASE = `${window.location.origin}/api`;
+      const logEl = document.getElementById('log');
+      const statusEl = document.getElementById('loginStatus');
+      const totpEl = document.getElementById('totp');
+
+      function ts() {
+        return new Date().toLocaleTimeString('en-IN', {
+          timeZone: 'Asia/Kolkata',
+          hour12: true
+        });
+      }
+
+      function log(msg, type = 'info') {
+        const line = document.createElement('div');
+        line.className = type;
+        line.textContent = `[${ts()}] ${msg}`;
+        if (logEl.textContent === 'Ready.') logEl.textContent = '';
+        logEl.appendChild(line);
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      async function parseJson(res) {
+        const text = await res.text();
+        try {
+          return JSON.parse(text);
+        } catch {
+          throw new Error(
+            `Non-JSON response (${res.status}): ${text.slice(0, 120)}`
+          );
+        }
+      }
+
+      /** Login — server fills clientcode/password from .env; body only needs totp */
+      async function doLogin() {
+        const totp = (totpEl.value || '').trim();
+        if (!totp || totp.length < 6) {
+          log('Enter a valid 6-digit TOTP', 'err');
+          statusEl.textContent = 'TOTP required';
+          return;
+        }
+
+        statusEl.textContent = 'Logging in…';
+        log('Logging in…', 'info');
+
+        try {
+          const res = await fetch(`${BASE}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ totp })
+          });
+
+          const data = await parseJson(res);
+
+          if (!res.ok || data.status === false) {
+            const msg = data.message || `HTTP ${res.status}`;
+            log(`Login failed: ${msg}`, 'err');
+            statusEl.textContent = msg;
+            return;
+          }
+
+          log('Login successful — JWT stored on server', 'ok');
+          statusEl.textContent = 'Logged in';
+          totpEl.value = '';
+          await checkStatus();
+        } catch (err) {
+          log(`Login error: ${err.message}`, 'err');
+          statusEl.textContent = 'Login error';
+        }
+      }
+
+      async function checkStatus() {
+        log('Checking /api/status …', 'info');
+        try {
+          const res = await fetch(`${window.location.origin}/api/status`, {
+            cache: 'no-store'
+          });
+          const data = await parseJson(res);
+          const jwt = data.jwt || data;
+          const valid = jwt.valid === true || data.valid === true;
+
+          if (valid) {
+            const mins =
+              jwt.minutesRemaining != null
+                ? Number(jwt.minutesRemaining).toFixed(1)
+                : '?';
+            log(`JWT valid · ~${mins} min left`, 'ok');
+            statusEl.textContent = `Session OK · ${mins} min left`;
+          } else {
+            log('No valid JWT — login required', 'err');
+            statusEl.textContent = 'No active session';
+          }
+        } catch (err) {
+          log(`Status error: ${err.message}`, 'err');
+        }
+      }
+
+      async function runJob() {
+        const btn = document.getElementById('btn-run');
+        btn.disabled = true;
+        log('Starting trigger job…', 'info');
+        statusEl.textContent = 'Running job…';
+
+        try {
+          const res = await fetch(`${BASE}/test/run-triggers`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+          });
+          const data = await parseJson(res);
+
+          if (data.status) {
+            log(data.message || 'Job started', 'ok');
+            statusEl.textContent = data.message || 'Job started';
+          } else {
+            log(data.message || 'Job failed', 'err');
+            statusEl.textContent = data.message || 'Failed';
+          }
+        } catch (err) {
+          log(`Run error: ${err.message}`, 'err');
+          statusEl.textContent = 'Run error';
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      async function doLogout() {
+        log('Logging out…', 'info');
+        try {
+          const res = await fetch(`${BASE}/logout`, { method: 'POST' });
+          const data = await parseJson(res);
+          log(data.message || 'Logged out', 'ok');
+          statusEl.textContent = 'Logged out';
+        } catch (err) {
+          log(`Logout error: ${err.message}`, 'err');
+        }
+      }
+
+      document.getElementById('btn-login').onclick = doLogin;
+      document.getElementById('btn-status').onclick = checkStatus;
+      document.getElementById('btn-run').onclick = runJob;
+      document.getElementById('btn-logout').onclick = doLogout;
+
+      totpEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') doLogin();
+      });
+
+      // Initial session check
+      checkStatus();
+    })();
+  </script>
+</body>
+</html>

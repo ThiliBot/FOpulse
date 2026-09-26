@@ -1,0 +1,162 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Session Pulse — Admin</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="/css/dashboard.css" />
+  <link rel="stylesheet" href="/css/theme.css" />
+  <style>
+    /* ── Admin-only additions ───────────────────────────── */
+    .sp-admin-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700;
+      letter-spacing: .6px; text-transform: uppercase;
+      background: rgba(245,158,11,.12); color: var(--sp-pe); border: 1px solid rgba(245,158,11,.3);
+    }
+
+    .sp-date-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 0; }
+    .sp-date-tab {
+      padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      background: #0f1730; color: var(--sp-muted); border: 1px solid var(--sp-border);
+      cursor: pointer; transition: all .15s ease; white-space: nowrap;
+    }
+    .sp-date-tab:hover { border-color: rgba(94,234,212,.4); color: var(--sp-text); }
+    .sp-date-tab.active { background: rgba(94,234,212,.1); border-color: var(--sp-accent); color: var(--sp-accent); }
+
+    .sp-admin-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .sp-btn-danger {
+      background: linear-gradient(90deg, rgba(239,68,68,.15), rgba(239,68,68,.05));
+      border-color: rgba(239,68,68,.3); color: #fca5a5;
+    }
+    .sp-btn-danger:hover { border-color: rgba(239,68,68,.6) !important; }
+
+    .sp-load-more {
+      display: block; margin: 0 auto; padding: 10px 24px;
+      background: #0f1730; color: var(--sp-text); border: 1px solid var(--sp-border);
+      border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px;
+    }
+    .sp-load-more:hover { border-color: rgba(94,234,212,.5); }
+    .sp-load-more:disabled { opacity: .5; cursor: wait; }
+
+    .sp-admin-footer {
+      display: flex; justify-content: space-between; align-items: center; gap: 8px;
+      padding: 10px 0; font-size: 12px; color: var(--sp-muted);
+    }
+  </style>
+</head>
+<body class="session-pulse">
+
+  <!-- ── Header ─────────────────────────────────────────── -->
+  <header class="sp-header">
+    <div class="sp-brand">
+      <span class="sp-dot" aria-hidden="true"></span>
+      <h1>Session Pulse</h1>
+      <span class="sp-subtitle">Admin — All Dates, No Delay</span>
+      <span class="sp-admin-badge">ADMIN</span>
+    </div>
+    <div class="sp-clock" role="timer" aria-label="IST time and session window">
+      <time id="ist-time">--:--:--</time>
+      <span id="ist-window" class="sp-window">—</span>
+    </div>
+    <button type="button" class="sp-theme-btn" data-theme-toggle>Dark</button>
+  </header>
+
+  <main class="sp-main">
+
+    <!-- ── Admin actions row ────────────────────────────── -->
+    <section class="sp-admin-actions" aria-label="Admin controls">
+      <button id="btn-run-triggers" class="sp-btn" type="button">▶ Run Trigger Job</button>
+      <a href="/dashboard.html" class="sp-btn" style="text-decoration:none;display:inline-block;">Public View</a>
+      <a href="/status" class="sp-btn" style="text-decoration:none;display:inline-block;">Status</a>
+      <button id="btn-clear-key" class="sp-btn sp-btn-danger" type="button">Clear Admin Key</button>
+    </section>
+
+    <!-- ── Date tabs ────────────────────────────────────── -->
+    <section aria-label="Select date">
+      <h2 class="sp-section-title" style="margin-bottom:10px;">Available Dates</h2>
+      <div id="date-tabs" class="sp-date-tabs"></div>
+    </section>
+
+    <!-- ── Hero: Top-5 by score + aggregate metrics ─────── -->
+    <section class="sp-hero" aria-label="Top movers and market summary">
+      <div class="sp-pulse-ring" id="pulse-ring" aria-hidden="true"></div>
+
+      <h2 class="sp-section-title">Top 5 by Score</h2>
+      <ol class="sp-top-list" id="top-list" role="list"></ol>
+
+      <hr class="sp-divider" />
+
+      <dl class="sp-metrics" aria-label="Aggregate metrics">
+        <div class="sp-metric"><dt>Symbols</dt><dd id="m-symbols">0</dd></div>
+        <div class="sp-metric"><dt>Triggers</dt><dd id="m-triggers">0</dd></div>
+        <div class="sp-metric"><dt>Total Vol</dt><dd id="m-volume">0</dd></div>
+        <div class="sp-metric"><dt>CE</dt><dd id="m-ce" class="sp-val-ce">0</dd></div>
+        <div class="sp-metric"><dt>PE</dt><dd id="m-pe" class="sp-val-pe">0</dd></div>
+      </dl>
+    </section>
+
+    <!-- ── Filters & sort ───────────────────────────────── -->
+    <section class="sp-controls" aria-label="Filters and sort">
+      <label class="sp-field">
+        <span>Min Δ%</span>
+        <input id="f-min-change" type="number" value="5" min="0" step="1" inputmode="numeric" />
+      </label>
+
+      <label class="sp-field">
+        <span>Min Vol</span>
+        <select id="f-min-vol">
+          <option value="0" selected>All</option>
+          <option value="50000">≥ 50 K</option>
+          <option value="100000">≥ 1 L</option>
+          <option value="500000">≥ 5 L</option>
+        </select>
+      </label>
+
+      <label class="sp-field">
+        <span>Sector</span>
+        <select id="f-sector"><option value="">All</option></select>
+      </label>
+
+      <label class="sp-field">
+        <span>Type</span>
+        <select id="f-type">
+          <option value="">All</option>
+          <option value="CE">CE</option>
+          <option value="PE">PE</option>
+        </select>
+      </label>
+
+      <label class="sp-field">
+        <span>Sort by</span>
+        <select id="f-sort">
+          <option value="score" selected>Score</option>
+          <option value="abs">|Δ%|</option>
+          <option value="volume">Volume</option>
+          <option value="time">Newest</option>
+        </select>
+      </label>
+
+      <button id="btn-refresh" class="sp-btn" type="button">Refresh</button>
+    </section>
+
+    <!-- ── Symbol groups ───────────────────────────────── -->
+    <section class="sp-groups" aria-label="Symbols by underlying">
+      <div id="groups-root"></div>
+    </section>
+
+    <!-- ── Load more + status ───────────────────────────── -->
+    <button id="btn-load-more" class="sp-load-more" type="button" hidden></button>
+
+    <footer class="sp-status sp-admin-footer" role="status" aria-live="polite">
+      <span id="status-text">Loading…</span>
+      <span id="loaded-count"></span>
+    </footer>
+
+  </main>
+
+  <script src="/js/admin-dashboard.js" defer></script>
+  <script src="/js/theme.js"></script>
+</body>
+</html>

@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kadavu Options • India Equity Live Soon</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap');
+
+        :root {
+            --bg: #060a12;
+            --card: rgba(12, 18, 32, 0.92);
+            --gold: #e8c547;
+            --profit: #00e676;
+            --loss: #ff5252;
+            --cyan: #00e5ff;
+            --muted: #7a8ba3;
+            --border: rgba(232, 197, 71, 0.28);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            min-height: 100vh;
+            background: var(--bg);
+            color: #e0e6f0;
+            font-family: 'Cormorant Garamond', serif;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .stars {
+            position: fixed; inset: 0; pointer-events: none; z-index: 0;
+        }
+        .star {
+            position: absolute; background: #fff; border-radius: 50%;
+            animation: twinkle var(--d) ease-in-out infinite; opacity: 0;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0; transform: scale(0.4); }
+            50% { opacity: var(--o); transform: scale(1); }
+        }
+
+        .particles {
+            position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden;
+        }
+        .particle {
+            position: absolute; border-radius: 50%;
+            background: radial-gradient(circle, var(--gold), transparent);
+            animation: float-up linear infinite; opacity: 0.55;
+        }
+        @keyframes float-up {
+            0% { transform: translateY(100vh) scale(0.4); opacity: 0; }
+            15% { opacity: 0.7; }
+            85% { opacity: 0.35; }
+            100% { transform: translateY(-8vh) scale(1.1); opacity: 0; }
+        }
+
+        .container {
+            position: relative; z-index: 10;
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 1.8rem 1rem 3rem;
+        }
+
+        .frame {
+            position: relative;
+            max-width: 920px; width: 100%;
+            padding: 2.4rem 2rem 2.2rem;
+            background: linear-gradient(160deg, rgba(10,16,30,0.95), rgba(6,10,20,0.97));
+            border: 1px solid var(--border);
+            box-shadow: 0 0 50px rgba(0, 229, 255, 0.08), inset 0 0 80px rgba(0, 40, 80, 0.15);
+            border-radius: 6px;
+        }
+        .frame::before, .frame::after {
+            content: ''; position: absolute; width: 36px; height: 36px;
+            border: 2px solid var(--gold); opacity: 0.65;
+        }
+        .frame::before { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+        .frame::after { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+
+        .corner {
+            position: absolute; width: 18px; height: 18px;
+            border: 1.5px solid var(--gold); opacity: 0.45;
+        }
+        .corner.tl { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+        .corner.tr { top: 10px; right: 10px; border-left: none; border-bottom: none; }
+        .corner.bl { bottom: 10px; left: 10px; border-right: none; border-top: none; }
+        .corner.br { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+
+        .badge {
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem; letter-spacing: 0.22em;
+            color: var(--cyan); border: 1px solid rgba(0,229,255,0.35);
+            padding: 0.3rem 0.85rem; border-radius: 2px;
+            margin-bottom: 1rem; background: rgba(0,40,60,0.4);
+        }
+        h1 {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(1.9rem, 5.2vw, 3.1rem);
+            font-weight: 700; letter-spacing: 0.08em;
+            color: #f4e9c8;
+            text-shadow: 0 0 24px rgba(232,197,71,0.45), 0 0 48px rgba(0,229,255,0.15);
+            line-height: 1.15; margin-bottom: 0.35rem;
+        }
+        .subtitle {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(0.85rem, 2.2vw, 1.05rem);
+            letter-spacing: 0.28em; text-transform: uppercase;
+            color: var(--gold); opacity: 0.9; margin-bottom: 1.4rem;
+        }
+        .divider {
+            width: 160px; height: 1px; margin: 0 auto 1.5rem;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            position: relative;
+        }
+        .divider::before {
+            content: '₹'; position: absolute; left: 50%; top: 50%;
+            transform: translate(-50%, -50%);
+            background: #060a12; padding: 0 8px;
+            color: var(--gold); font-size: 1rem; font-weight: 700;
+        }
+        .tagline {
+            font-size: 1.15rem; font-style: italic; color: #a8b8c8;
+            max-width: 540px; margin: 0 auto 2rem; line-height: 1.55;
+        }
+
+        .countdown {
+            display: flex; gap: 0.9rem; justify-content: center;
+            flex-wrap: wrap; margin-bottom: 2.2rem;
+        }
+        .time-box {
+            background: rgba(8, 14, 28, 0.85);
+            border: 1px solid rgba(0,229,255,0.25);
+            padding: 0.9rem 1rem; min-width: 76px; border-radius: 4px;
+            box-shadow: 0 0 18px rgba(0,100,140,0.12);
+        }
+        .time-box span {
+            display: block; font-family: 'JetBrains Mono', monospace;
+            font-size: 1.85rem; font-weight: 600; color: var(--cyan); line-height: 1;
+        }
+        .time-box small {
+            font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase;
+            color: var(--muted); margin-top: 0.3rem; display: block;
+        }
+
+        .dash-title {
+            font-family: 'Cinzel', serif; font-size: 0.95rem;
+            letter-spacing: 0.18em; color: var(--gold);
+            text-align: center; margin-bottom: 1.1rem; opacity: 0.9;
+        }
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.9rem; margin-bottom: 1.8rem;
+        }
+        .card {
+            background: var(--card);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 5px; padding: 1rem 1.1rem;
+            position: relative; overflow: hidden;
+        }
+        .card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+        }
+        .card.profit::before { background: linear-gradient(90deg, transparent, var(--profit), transparent); }
+        .card.loss::before { background: linear-gradient(90deg, transparent, var(--loss), transparent); }
+        .card.gold::before { background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+        .card.cyan::before { background: linear-gradient(90deg, transparent, var(--cyan), transparent); }
+
+        .card-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.68rem; letter-spacing: 0.12em;
+            color: var(--muted); text-transform: uppercase; margin-bottom: 0.45rem;
+        }
+        .card-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.35rem; font-weight: 600; line-height: 1.2;
+        }
+        .card-value.profit { color: var(--profit); }
+        .card-value.loss { color: var(--loss); }
+        .card-value.gold { color: var(--gold); }
+        .card-value.cyan { color: var(--cyan); }
+        .card-sub {
+            font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem;
+        }
+
+        .chart-card {
+            grid-column: 1 / -1;
+            background: var(--card);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 5px; padding: 1.1rem 1.2rem 0.9rem;
+            margin-bottom: 1.4rem;
+        }
+        .chart-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 0.8rem; flex-wrap: wrap; gap: 0.5rem;
+        }
+        .chart-header h3 {
+            font-family: 'Cinzel', serif; font-size: 0.9rem;
+            letter-spacing: 0.12em; color: var(--gold);
+        }
+        .chart-legend {
+            display: flex; gap: 1rem; font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+        }
+        .legend-item { display: flex; align-items: center; gap: 0.35rem; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .dot.p { background: var(--profit); }
+        .dot.l { background: var(--loss); }
+
+        .chart-svg {
+            width: 100%; height: 110px; display: block;
+        }
+
+        .options-strip {
+            display: flex; gap: 0.6rem; overflow-x: auto;
+            padding-bottom: 0.3rem; margin-bottom: 0.5rem;
+            scrollbar-width: thin; scrollbar-color: var(--gold) transparent;
+        }
+        .opt-pill {
+            flex-shrink: 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem; padding: 0.45rem 0.75rem;
+            border-radius: 3px; border: 1px solid;
+            white-space: nowrap;
+        }
+        .opt-pill.call {
+            color: var(--profit); border-color: rgba(0,230,118,0.35);
+            background: rgba(0,80,40,0.25);
+        }
+        .opt-pill.put {
+            color: var(--loss); border-color: rgba(255,82,82,0.35);
+            background: rgba(80,20,20,0.25);
+        }
+
+        .footer {
+            margin-top: 2.4rem; font-size: 0.85rem;
+            color: #4a5a70; letter-spacing: 0.06em; text-align: center;
+        }
+        .footer a { color: #6a7a90; text-decoration: none; }
+        .footer a:hover { color: var(--gold); }
+
+        @media (max-width: 560px) {
+            .frame { padding: 1.8rem 1.1rem 1.6rem; }
+            .time-box { min-width: 64px; padding: 0.7rem 0.6rem; }
+            .time-box span { font-size: 1.5rem; }
+            .dashboard { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+    <div class="particles" id="particles"></div>
+
+    <div class="container">
+        <div class="frame">
+            <div class="corner tl"></div>
+            <div class="corner tr"></div>
+            <div class="corner bl"></div>
+            <div class="corner br"></div>
+
+            <div style="text-align:center">
+                <span class="badge">NSE • BSE • EQUITY OPTIONS</span>
+                <h1>Kadavu Options</h1>
+                <p class="subtitle">Where Money Dwells in the Realm of India</p>
+                <div class="divider"></div>
+                <p class="tagline">
+                    A mystical dashboard for equity options traders.
+                    Watch INR projections, profit &amp; loss, and live option chains awaken soon.
+                </p>
+            </div>
+
+            <div class="countdown" id="countdown">
+                <div class="time-box"><span id="days">00</span><small>Days</small></div>
+                <div class="time-box"><span id="hours">00</span><small>Hours</small></div>
+                <div class="time-box"><span id="minutes">00</span><small>Minutes</small></div>
+                <div class="time-box"><span id="seconds">00</span><small>Seconds</small></div>
+            </div>
+
+            <p class="dash-title">✦ Live Dashboard Preview ✦</p>
+
+            <div class="dashboard">
+                <div class="card gold">
+                    <div class="card-label">Portfolio Value</div>
+                    <div class="card-value gold">₹ 12,48,750</div>
+                    <div class="card-sub">+ ₹ 86,420 today</div>
+                </div>
+                <div class="card profit">
+                    <div class="card-label">Today’s P/L</div>
+                    <div class="card-value profit">+ ₹ 42,380</div>
+                    <div class="card-sub">+3.48% • Equity Options</div>
+                </div>
+                <div class="card loss">
+                    <div class="card-label">Open Risk</div>
+                    <div class="card-value loss">– ₹ 18,200</div>
+                    <div class="card-sub">Max Drawdown Alert</div>
+                </div>
+                <div class="card cyan">
+                    <div class="card-label">Active Positions</div>
+                    <div class="card-value cyan">14</div>
+                    <div class="card-sub">Nifty • BankNifty • Stocks</div>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3>7-Day P/L Projection</h3>
+                    <div class="chart-legend">
+                        <div class="legend-item"><span class="dot p"></span> Profit</div>
+                        <div class="legend-item"><span class="dot l"></span> Loss</div>
+                    </div>
+                </div>
+                <svg class="chart-svg" viewBox="0 0 600 110" preserveAspectRatio="none">
+                    <line x1="0" y1="25" x2="600" y2="25" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+                    <line x1="0" y1="55" x2="600" y2="55" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+                    <line x1="0" y1="85" x2="600" y2="85" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+                    <path d="M0,70 L80,55 L160,48 L240,35 L320,42 L400,28 L480,22 L560,18 L600,15 L600,110 L0,110 Z"
+                          fill="rgba(0,230,118,0.12)"/>
+                    <path d="M0,70 L80,55 L160,48 L240,35 L320,42 L400,28 L480,22 L560,18 L600,15"
+                          fill="none" stroke="#00e676" stroke-width="2.2" stroke-linecap="round"/>
+                    <path d="M120,55 L140,78 L160,48" fill="none" stroke="#ff5252" stroke-width="1.8" stroke-linecap="round"/>
+                    <path d="M300,42 L330,72 L360,38" fill="none" stroke="#ff5252" stroke-width="1.8" stroke-linecap="round"/>
+                    <circle cx="0" cy="70" r="3.5" fill="#00e676"/>
+                    <circle cx="240" cy="35" r="3.5" fill="#00e676"/>
+                    <circle cx="400" cy="28" r="3.5" fill="#00e676"/>
+                    <circle cx="600" cy="15" r="3.5" fill="#00e676"/>
+                </svg>
+            </div>
+
+            <div class="options-strip">
+                <div class="opt-pill call">NIFTY 24500 CE  +12.4%</div>
+                <div class="opt-pill put">BANKNIFTY 52000 PE  –8.1%</div>
+                <div class="opt-pill call">RELIANCE 2900 CE  +6.7%</div>
+                <div class="opt-pill put">HDFCBANK 1650 PE  –3.2%</div>
+                <div class="opt-pill call">INFY 1850 CE  +9.8%</div>
+                <div class="opt-pill put">SBIN 820 PE  –5.4%</div>
+            </div>
+        </div>
+
+        <p class="footer">
+            © 2026 Kadavu Options • Indian Equity Options Dashboard •
+            <a href="#">Terms</a> · <a href="#">Risk Disclosure</a>
+        </p>
+    </div>
+
+    <script>
+        const starsEl = document.getElementById('stars');
+        for (let i = 0; i < 110; i++) {
+            const s = document.createElement('div');
+            s.className = 'star';
+            const size = Math.random() * 2.2 + 0.4;
+            s.style.width = size + 'px';
+            s.style.height = size + 'px';
+            s.style.left = Math.random() * 100 + '%';
+            s.style.top = Math.random() * 100 + '%';
+            s.style.setProperty('--d', (Math.random() * 4 + 2) + 's');
+            s.style.setProperty('--o', Math.random() * 0.65 + 0.25);
+            s.style.animationDelay = Math.random() * 5 + 's';
+            starsEl.appendChild(s);
+        }
+
+        const partEl = document.getElementById('particles');
+        for (let i = 0; i < 22; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.animationDuration = (Math.random() * 11 + 7) + 's';
+            p.style.animationDelay = Math.random() * 9 + 's';
+            const sz = Math.random() * 4 + 2;
+            p.style.width = sz + 'px';
+            p.style.height = sz + 'px';
+            partEl.appendChild(p);
+        }
+
+        function getTarget() {
+            const now = new Date();
+            const today9pm = new Date(now);
+            today9pm.setHours(21, 0, 0, 0);
+            const target = new Date(today9pm);
+            target.setDate(target.getDate() + 7);
+            return target;
+        }
+
+        const targetDate = getTarget();
+
+        function updateCountdown() {
+            const now = new Date().getTime();
+            const distance = targetDate - now;
+
+            if (distance < 0) {
+                document.getElementById('days').textContent = '00';
+                document.getElementById('hours').textContent = '00';
+                document.getElementById('minutes').textContent = '00';
+                document.getElementById('seconds').textContent = '00';
+                return;
+            }
+
+            const d = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((distance % (1000 * 60)) / 1000);
+
+            document.getElementById('days').textContent = String(d).padStart(2, '0');
+            document.getElementById('hours').textContent = String(h).padStart(2, '0');
+            document.getElementById('minutes').textContent = String(m).padStart(2, '0');
+            document.getElementById('seconds').textContent = String(s).padStart(2, '0');
+        }
+
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+    </script>
+</body>
+</html>

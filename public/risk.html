@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FOPulse – Risk &amp; Disclaimer</title>
+  <link rel="stylesheet" href="/css/dashboard.css" />
+  <link rel="stylesheet" href="/css/compliance.css" />
+  <style>
+    .risk-wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 8px 4px 40px;
+    }
+    .risk-wrap h1 {
+      font-size: 1.35rem;
+      margin-bottom: 8px;
+    }
+    .risk-wrap h2 {
+      font-size: 1rem;
+      margin: 22px 0 8px;
+      color: var(--text);
+    }
+    .risk-wrap p,
+    .risk-wrap li {
+      font-size: 0.92rem;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+    .risk-wrap ul {
+      margin: 8px 0 0 18px;
+    }
+    .risk-wrap .card {
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body data-no-disclaimer-modal="1">
+  <div class="risk-wrap">
+    <header>
+      <div>
+        <h1>Risk &amp; Disclaimer</h1>
+        <div class="subtitle">Educational historical data only</div>
+      </div>
+      <div class="header-actions">
+        <a class="link" href="/dashboard.html">Dashboard</a>
+        <button class="theme-btn" id="themeBtn" type="button">Theme</button>
+      </div>
+    </header>
+
+    <div class="card">
+      <h2>1. Nature of this website</h2>
+      <p>
+        FOPulse displays historical options-related activity that is at least
+        <strong>30 days old</strong>. The site is intended only for
+        educational and awareness purposes, such as reviewing how prices moved
+        in the past. It is not a trading platform and does not execute orders.
+      </p>
+
+      <h2>2. No investment advice</h2>
+      <p>
+        Nothing on this website constitutes investment advice, research
+        recommendation, a solicitation, or an offer to buy or sell any
+        securities or derivatives. We do not provide personalized
+        recommendations of any kind.
+      </p>
+
+      <h2>3. No real-time data</h2>
+      <p>
+        All price, volume, and percentage-move information shown on public
+        pages is delayed by a minimum of <strong>30 days</strong>. This is not
+        live or real-time market data and must not be used as a basis for
+        immediate trading decisions.
+      </p>
+
+      <h2>4. User responsibility</h2>
+      <p>
+        Any decision you make is solely your own. You should do your own
+        research or consult a SEBI-registered investment adviser if needed.
+        FOPulse is not responsible for any loss or damage arising from use of
+        this website or reliance on its content.
+      </p>
+
+      <h2>5. Options risk</h2>
+      <p>
+        Trading in options involves a substantial risk of loss and is not
+        suitable for every investor. Past price movements do not predict future
+        performance.
+      </p>
+
+      <h2>6. No warranty</h2>
+      <p>
+        Data and content are provided “as is”, without warranties of accuracy,
+        completeness, timeliness, or fitness for any particular purpose. We may
+        change or remove content at any time.
+      </p>
+
+      <h2>7. How to use this site</h2>
+      <ul>
+        <li>Treat every card as a historical study example only.</li>
+        <li>Do not interpret listings as buy/sell signals or alerts.</li>
+        <li>Prefer the Dashboard for archive review; system Status pages are operational, not advice.</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+    }
+    (function initTheme() {
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(saved || (prefersDark ? 'dark' : 'light'));
+    })();
+    document.getElementById('themeBtn').onclick = () => {
+      const next =
+        document.documentElement.getAttribute('data-theme') === 'dark'
+          ? 'light'
+          : 'dark';
+      applyTheme(next);
+    };
+  </script>
+  <script src="/js/compliance.js"></script>
+</body>
+</html>

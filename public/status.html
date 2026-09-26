@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Session Pulse — Status</title>
+  <link rel="stylesheet" href="/css/theme.css" />
+  <link rel="stylesheet" href="/css/dashboard.css" />
+  <style>
+    /* Status-only layout (uses Session Pulse tokens) */
+    .status-page .sp-main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 12px 16px 40px;
+      gap: 10px;
+    }
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    @media (max-width: 720px) {
+      .status-grid { grid-template-columns: 1fr; }
+    }
+    .status-card {
+      background: var(--sp-panel);
+      border: 1px solid var(--sp-border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      box-shadow: var(--sp-shadow);
+    }
+    .status-card h2 {
+      margin: 0 0 10px;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--sp-muted);
+      font-weight: 700;
+    }
+    .kv {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 6px 10px;
+      font-size: 13px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--sp-border-soft, var(--sp-border));
+    }
+    .kv:last-child { border-bottom: none; }
+    .kv span:first-child { color: var(--sp-muted); }
+    .kv span:last-child {
+      font-variant-numeric: tabular-nums;
+      word-break: break-word;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid var(--sp-border);
+    }
+    .pill.ok {
+      color: var(--sp-up);
+      border-color: color-mix(in srgb, var(--sp-up) 40%, var(--sp-border));
+      background: color-mix(in srgb, var(--sp-up) 12%, transparent);
+    }
+    .pill.bad {
+      color: var(--sp-down);
+      border-color: color-mix(in srgb, var(--sp-down) 40%, var(--sp-border));
+      background: color-mix(in srgb, var(--sp-down) 12%, transparent);
+    }
+    .pill.muted {
+      color: var(--sp-muted);
+    }
+    .runs {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 320px;
+      overflow: auto;
+    }
+    .run-row {
+      display: grid;
+      grid-template-columns: 64px 1fr auto auto;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 10px;
+      border: 1px solid var(--sp-border);
+      border-radius: 8px;
+      background: var(--sp-panel-2, rgba(15, 23, 48, 0.35));
+      font-size: 12px;
+    }
+    .run-row .t { color: var(--sp-muted); font-variant-numeric: tabular-nums; }
+    details.raw-wrap {
+      background: var(--sp-panel);
+      border: 1px solid var(--sp-border);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    details.raw-wrap summary {
+      cursor: pointer;
+      color: var(--sp-muted);
+      font-size: 12px;
+      font-weight: 600;
+      user-select: none;
+    }
+    pre.raw {
+      margin: 10px 0 0;
+      padding: 12px;
+      border-radius: 8px;
+      background: var(--sp-input, #0f1730);
+      border: 1px solid var(--sp-border);
+      overflow: auto;
+      font-size: 11px;
+      line-height: 1.4;
+      max-height: 360px;
+      color: var(--sp-text);
+    }
+    .nav-links { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  </style>
+</head>
+<body class="session-pulse status-page">
+  <header class="sp-header">
+    <div class="sp-brand">
+      <span class="sp-dot" aria-hidden="true"></span>
+      <h1>Status</h1>
+      <span class="sp-subtitle">Service health</span>
+    </div>
+    <div class="nav-links">
+      <a class="sp-btn" href="/dashboard.html">Dashboard</a>
+      <a class="sp-btn" href="/admin-dashboard.html">Admin</a>
+      <a class="sp-btn" href="/test-ui.html">Test UI</a>
+      <button type="button" class="sp-theme-btn" data-theme-toggle>Dark</button>
+    </div>
+  </header>
+
+  <main class="sp-main">
+    <section class="status-grid" aria-label="Health summary">
+      <article class="status-card">
+        <h2>Connection</h2>
+        <div class="kv"><span>Endpoint</span><span id="ep">—</span></div>
+        <div class="kv"><span>HTTP</span><span id="http">—</span></div>
+        <div class="kv"><span>Checked</span><span id="checked">—</span></div>
+      </article>
+
+      <article class="status-card">
+        <h2>JWT session</h2>
+        <div class="kv"><span>Valid</span><span id="jwt-valid">—</span></div>
+        <div class="kv"><span>Expires</span><span id="jwt-exp">—</span></div>
+        <div class="kv"><span>Remaining</span><span id="jwt-rem">—</span></div>
+        <div class="kv"><span>Refresh token</span><span id="jwt-refresh">—</span></div>
+      </article>
+
+      <article class="status-card">
+        <h2>Scans today</h2>
+        <div class="kv"><span>Date</span><span id="scan-date">—</span></div>
+        <div class="kv"><span>Runs</span><span id="scan-count">—</span></div>
+        <div class="kv"><span>Success</span><span id="scan-ok">—</span></div>
+        <div class="kv"><span>Failed</span><span id="scan-fail">—</span></div>
+      </article>
+
+      <article class="status-card">
+        <h2>Last run</h2>
+        <div class="kv"><span>Status</span><span id="last-status">—</span></div>
+        <div class="kv"><span>Symbols</span><span id="last-symbols">—</span></div>
+        <div class="kv"><span>Triggers</span><span id="last-triggers">—</span></div>
+        <div class="kv"><span>Finished</span><span id="last-finished">—</span></div>
+      </article>
+    </section>
+
+    <section class="status-card">
+      <h2>Recent runs</h2>
+      <div id="runs" class="runs"><div class="sp-muted">Loading…</div></div>
+    </section>
+
+    <details class="raw-wrap">
+      <summary>Raw JSON</summary>
+      <pre id="raw" class="raw">Loading…</pre>
+    </details>
+  </main>
+
+  <script src="/js/theme.js"></script>
+  <script>
+    (() => {
+      const $ = (id) => document.getElementById(id);
+
+      function pill(ok, yes = 'Valid', no = 'Invalid') {
+        if (ok === true) return `<span class="pill ok">${yes}</span>`;
+        if (ok === false) return `<span class="pill bad">${no}</span>`;
+        return `<span class="pill muted">—</span>`;
+      }
+
+      function fmtIST(value) {
+        if (!value) return '—';
+        try {
+          return new Date(value).toLocaleString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+          });
+        } catch {
+          return String(value);
+        }
+      }
+
+      function mins(n) {
+        if (n == null || !Number.isFinite(Number(n))) return '—';
+        return `${Number(n).toFixed(1)} min`;
+      }
+
+      async function load() {
+        const endpoints = ['/api/status', '/api/auth/status', '/'];
+        let data = null;
+        let used = endpoints[0];
+        let http = '—';
+
+        for (const url of endpoints) {
+          try {
+            const res = await fetch(url, { cache: 'no-store' });
+            http = String(res.status);
+            used = url;
+            data = await res.json().catch(() => ({ parseError: true, statusCode: res.status }));
+            if (res.ok) break;
+          } catch (err) {
+            data = { status: false, error: err.message };
+            http = 'ERR';
+          }
+        }
+
+        $('ep').textContent = used;
+        $('http').textContent = http;
+        $('checked').textContent = fmtIST(new Date().toISOString());
+        $('raw').textContent = JSON.stringify(data, null, 2);
+
+        // JWT — support nested jwt{} (your API) and flat valid
+        const jwt = data?.jwt || {};
+        const valid =
+          typeof jwt.valid === 'boolean'
+            ? jwt.valid
+            : typeof data?.valid === 'boolean'
+              ? data.valid
+              : null;
+
+        $('jwt-valid').innerHTML = pill(valid, 'Valid', 'No session');
+        $('jwt-exp').textContent = fmtIST(jwt.expiresAt || data?.expiresAt);
+        $('jwt-rem').textContent =
+          jwt.minutesRemaining != null
+            ? mins(jwt.minutesRemaining)
+            : data?.minutesRemaining != null
+              ? mins(data.minutesRemaining)
+              : jwt.remainingSeconds != null
+                ? mins(jwt.remainingSeconds / 60)
+                : '—';
+        $('jwt-refresh').innerHTML = pill(
+          jwt.hasRefreshToken === true || data?.hasRefreshToken === true,
+          'Yes',
+          'No'
+        );
+
+        // Scans today
+        const scans = data?.scansToday || {};
+        $('scan-date').textContent = scans.date || '—';
+        $('scan-count').textContent = scans.count ?? '—';
+        $('scan-ok').textContent = scans.success ?? '—';
+        $('scan-fail').textContent = scans.failed ?? '—';
+
+        // Runs
+        const runs = Array.isArray(scans.runs)
+          ? scans.runs
+          : Array.isArray(data?.runs)
+            ? data.runs
+            : [];
+
+        const last = runs[0];
+        if (last) {
+          $('last-status').innerHTML = pill(
+            last.status === 'success',
+            last.status || 'success',
+            last.status || 'failed'
+          );
+          $('last-symbols').textContent = last.symbolsCount ?? '—';
+          $('last-triggers').textContent = last.triggersFound ?? '—';
+          $('last-finished').textContent = fmtIST(last.finishedAt || last.updatedAt);
+        } else {
+          $('last-status').textContent = '—';
+          $('last-symbols').textContent = '—';
+          $('last-triggers').textContent = '—';
+          $('last-finished').textContent = '—';
+        }
+
+        const runsEl = $('runs');
+        if (!runs.length) {
+          runsEl.innerHTML = '<div class="sp-muted">No runs recorded today</div>';
+          return;
+        }
+
+        runsEl.innerHTML = runs
+          .slice(0, 12)
+          .map((r) => {
+            const ok = r.status === 'success';
+            const time = fmtIST(r.finishedAt || r.startedAt || r.createdAt);
+            return `<div class="run-row">
+              <span class="pill ${ok ? 'ok' : 'bad'}">${ok ? 'OK' : 'FAIL'}</span>
+              <span>${r.dayIST || scans.date || '—'} · ${r.symbolsCount ?? '—'} symbols · ${r.triggersFound ?? '—'} triggers</span>
+              <span class="t">${time}</span>
+              <span class="t">${r.error ? String(r.error).slice(0, 40) : ''}</span>
+            </div>`;
+          })
+          .join('');
+      }
+
+      load();
+      setInterval(load, 60000);
+    })();
+  </script>
+</body>
+</html>

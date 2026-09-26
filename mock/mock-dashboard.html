@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Options Intraday Dashboard – Optimized</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card: #1a1d27;
+      --border: #2a2e3b;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --green: #22c55e;
+      --red: #ef4444;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px;
+      min-height: 100vh;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    h1 { font-size: 1.5rem; font-weight: 600; }
+    .subtitle { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+
+    .stats {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .tile {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      transition: border-color 0.15s;
+    }
+
+    .tile:hover {
+      border-color: #3b82f6;
+    }
+
+    .tile-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .name { font-weight: 600; font-size: 1rem; }
+    .symbol { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
+
+    .badge {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+    .badge.ce { background: rgba(34,197,94,0.15); color: var(--green); }
+    .badge.pe { background: rgba(239,68,68,0.15); color: var(--red); }
+
+    .meta {
+      display: flex;
+      gap: 12px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 4px;
+    }
+
+    .start-price { font-size: 0.85rem; color: var(--muted); }
+    .end-price { font-size: 1.25rem; font-weight: 700; }
+
+    .change {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .change.positive { color: var(--green); }
+    .change.negative { color: var(--red); }
+
+    .sparkline {
+      width: 100%;
+      height: 48px;
+    }
+
+    .load-more {
+      display: block;
+      width: 100%;
+      margin: 28px auto 10px;
+      max-width: 280px;
+      padding: 12px;
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      text-align: center;
+    }
+    .load-more:hover {
+      background: #334155;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1>Options Intraday Dashboard</h1>
+      <div class="subtitle">Live from Angel One • ±5% moves • 15-min window</div>
+    </div>
+    <div class="stats" id="stats">Loading...</div>
+  </header>
+
+  <div class="grid" id="grid"></div>
+  <button class="load-more" id="loadMoreBtn" style="display:none">Load More</button>
+
+  <script>
+    let allData = [];
+    let shownCount = 0;
+    const PAGE_SIZE = 18;
+
+   async function loadData() {
+  try {
+    const res = await fetch('http://localhost:3003/api/triggers?minChange=5&limit=100');
+    const json = await res.json();
+
+    if (!json.status) {
+      throw new Error(json.message || 'Failed to load');
+    }
+
+    document.getElementById('stats').textContent =
+      `${json.count} opportunities (≥ ±5%)`;
+
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+
+    // ========== SECTOR GROUPING ==========
+    Object.entries(json.bySector).forEach(([sector, items]) => {
+      // 1. Sector header
+      const header = document.createElement('div');
+      header.style.gridColumn = '1 / -1';
+      header.style.margin = '20px 0 8px';
+      header.style.fontSize = '1.1rem';
+      header.style.fontWeight = '600';
+      header.style.color = '#94a3b8';
+      header.textContent = `${sector} (${items.length})`;
+      grid.appendChild(header);
+
+      // 2. Tiles for this sector
+      items.forEach(item => {
+        const isPositive = item.changePercent >= 0;
+
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+        tile.innerHTML = `
+          <div class="tile-header">
+            <div>
+              <div class="name">${item.instrumentName}</div>
+              <div class="symbol">${item.symbol} • ${item.expiry}</div>
+            </div>
+            <span class="badge ${item.optionType.toLowerCase()}">${item.optionType}</span>
+          </div>
+
+          <div class="meta">
+            <span>Strike: ${item.strikePrice}</span>
+            <span>Vol: ${Number(item.volume).toLocaleString()}</span>
+          </div>
+
+          <div class="price-row">
+            <div class="start-price">₹${Number(item.triggerStartPrice).toFixed(2)}</div>
+            <div class="end-price">₹${Number(item.triggerEndPrice).toFixed(2)}</div>
+          </div>
+
+          <div class="change ${isPositive ? 'positive' : 'negative'}">
+            ${isPositive ? '+' : ''}${Number(item.changePercent).toFixed(2)}%
+          </div>
+
+          ${createSparkline(item.priceSequence, isPositive)}
+        `;
+
+        grid.appendChild(tile);
+      });
+    });
+
+  } catch (err) {
+    document.getElementById('grid').innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:50px;color:#9ca3af">
+        Could not load triggers<br>${err.message}
+      </div>`;
+  }
+}
+
+    function createSparkline(prices, isPositive) {
+      if (!prices || prices.length < 2) return '';
+
+      const width = 280;
+      const height = 48;
+      const min = Math.min(...prices);
+      const max = Math.max(...prices);
+      const range = max - min || 1;
+
+      const points = prices.map((p, i) => {
+        const x = (i / (prices.length - 1)) * width;
+        const y = height - ((p - min) / range) * (height - 6) - 3;
+        return `${x},${y}`;
+      }).join(' ');
+
+      const color = isPositive ? '#22c55e' : '#ef4444';
+
+      return `
+        <svg class="sparkline" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+          <polyline
+            fill="none"
+            stroke="${color}"
+            stroke-width="2"
+            stroke-linejoin="round"
+            stroke-linecap="round"
+            points="${points}"
+          />
+        </svg>
+      `;
+    }
+
+    function renderMore() {
+      const grid = document.getElementById('grid');
+      const nextItems = allData.slice(shownCount, shownCount + PAGE_SIZE);
+
+      nextItems.forEach(item => {
+        const isPositive = item.changePercent >= 0;
+
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+        tile.innerHTML = `
+          <div class="tile-header">
+            <div>
+              <div class="name">${item.instrumentName}</div>
+              <div class="symbol">${item.symbol} • ${item.expiry}</div>
+            </div>
+            <span class="badge ${item.optionType.toLowerCase()}">${item.optionType}</span>
+          </div>
+
+          <div class="meta">
+            <span>Strike: ${item.strikePrice}</span>
+            <span>Vol: ${Number(item.volume).toLocaleString()}</span>
+          </div>
+
+          <div class="price-row">
+            <div class="start-price">₹${Number(item.triggerStartPrice).toFixed(2)}</div>
+            <div class="end-price">₹${Number(item.triggerEndPrice).toFixed(2)}</div>
+          </div>
+
+          <div class="change ${isPositive ? 'positive' : 'negative'}">
+            ${isPositive ? '+' : ''}${Number(item.changePercent).toFixed(2)}%
+          </div>
+
+          ${createSparkline(item.priceSequence, isPositive)}
+        `;
+
+        grid.appendChild(tile);
+      });
+
+      shownCount += nextItems.length;
+
+      const btn = document.getElementById('loadMoreBtn');
+      if (shownCount < allData.length) {
+        btn.style.display = 'block';
+        btn.textContent = `Load More (${allData.length - shownCount} remaining)`;
+      } else {
+        btn.style.display = 'none';
+      }
+    }
+
+    document.getElementById('loadMoreBtn').addEventListener('click', renderMore);
+
+    loadData();
+  </script>
+</body>
+</html>
