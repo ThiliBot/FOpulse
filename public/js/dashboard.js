@@ -149,6 +149,8 @@
       btn.addEventListener('click', async () => {
         state.date = btn.getAttribute('data-date') || '';
         renderDateTabs();
+        const loadingIndicator = $('#loading-indicator');
+        if (loadingIndicator) loadingIndicator.style.display = 'block';
         try {
           if (statusEl) statusEl.textContent = `Loading ${state.date}…`;
           state.raw = await fetchAllPages(state.date);
@@ -156,6 +158,8 @@
           render(filtered());
         } catch (err) {
           if (statusEl) statusEl.textContent = err.message;
+        } finally {
+          if (loadingIndicator) loadingIndicator.style.display = 'none';
         }
       });
     });
