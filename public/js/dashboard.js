@@ -308,9 +308,7 @@
     );
     state.delayDays = datesJson.delayDays || 30;
     state.dates = datesJson.dates || [];
-    state.date = state.dates.length
-      ? state.dates[state.dates.length - 1].date
-      : '';
+    state.date = state.dates.length       ? state.dates[0].date      : '';
     renderDateTabs();
     if (!state.date) {
       state.raw = [];
