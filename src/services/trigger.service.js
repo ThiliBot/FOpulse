@@ -220,7 +220,11 @@ async function getFifteenMinCandles(token, meta = {}) {
   let fromStr;
   let toStr;
 
-  if (isMarketOpenIST(now)) {
+  if (meta.from && meta.to) {
+    fromStr = meta.from;
+    toStr = meta.to;
+    console.log(`   ⏰ Bucket window ${fromStr} → ${toStr}`);
+  } else if (isMarketOpenIST(now)) {
     const fromDate = new Date(now.getTime() - 20 * 60 * 1000);
     fromStr = formatISTDateTime(fromDate);
     toStr = formatISTDateTime(now);
@@ -248,11 +252,16 @@ async function getFifteenMinCandles(token, meta = {}) {
     );
 
     const candles = response.data?.data || [];
-    const last15 = candles.slice(-15);
-    const closes = last15.map((c) => parseFloat(c[4]));
-    const startTime = last15.length ? new Date(last15[0][0]) : null;
-    const endTime = last15.length
-      ? new Date(last15[last15.length - 1][0])
+    // Bucket request is already the window. Do not slice last 15 sparse prints.
+    const used = meta.from && meta.to ? candles : candles.slice(-15);
+    const closes = used.map((c) => parseFloat(c[4]));
+    const startTime = used.length ? new Date(used[0][0]) : null;
+    const endTime = used.length ? new Date(used[used.length - 1][0]) : null;
+    const windowHigh = used.length
+      ? used.reduce((m, c) => Math.max(m, parseFloat(c[2])), 0)
+      : null;
+    const windowLow = used.length
+      ? used.reduce((m, c) => Math.min(m, parseFloat(c[3])), Infinity)
       : null;
 
     console.log(
@@ -260,22 +269,49 @@ async function getFifteenMinCandles(token, meta = {}) {
     );
     if (startTime && endTime) {
       console.log(
-        `     Window: ${startTime.toLocaleString('en-IN', {
-          timeZone: 'Asia/Kolkata'
-        })} → ${endTime.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`
+        `     Window: ${startTime.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} → ${endTime.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`
       );
     }
 
-    return { closes, startTime, endTime };
+    return { closes, startTime, endTime, windowHigh, windowLow };
   } catch (err) {
     console.warn(
       `   ✗ Candle FAILED [${label}]:`,
       err.response?.status,
       err.response?.data?.message || err.message
     );
-    return { closes: [], startTime: null, endTime: null };
+    return { closes: [], startTime: null, endTime: null, windowHigh: null, windowLow: null };
   }
 }
+
+function dteFromExpiry(expiry, on = new Date()) {
+  const months = { JAN:0,FEB:1,MAR:2,APR:3,MAY:4,JUN:5,JUL:6,AUG:7,SEP:8,OCT:9,NOV:10,DEC:11 };
+  const m = String(expiry).toUpperCase().match(/^(\d{1,2})([A-Z]{3})(\d{4})$/);
+  if (!m) return null;
+  const exp = Date.UTC(+m[3], months[m[2]], +m[1]);
+  const ist = new Date(on.getTime() + 5.5 * 60 * 60 * 1000);
+  const today = Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate());
+  return Math.round((exp - today) / 86400000);
+}
+
+function windowIndexFrom(start) {
+  if (!start) return null;
+  const p = getISTParts(start);
+  const mins = p.hour * 60 + p.minute;
+  return Math.max(0, Math.floor((mins - (9 * 60 + 15)) / 15));
+}
+
+function bestDepth(depth) {
+  const bid = depth?.buy?.[0]?.price;
+  const ask = depth?.sell?.[0]?.price;
+  const mid = bid && ask ? (bid + ask) / 2 : null;
+  return {
+    bid: bid || null,
+    ask: ask || null,
+    spreadPct: mid ? Number((((ask - bid) / mid) * 100).toFixed(2)) : null
+  };
+}
+
 /// ==============================================================
 // Build final trigger objects
 // ==============================================================
@@ -380,11 +416,16 @@ async function buildTriggers(symbols) {
     const triggerStartTime =
       candleData.startTime || new Date(now.getTime() - 15 * 60 * 1000);
     const triggerEndTime = candleData.endTime || now;
-
+    const spot = priceMap[contract.name] || null;
+    const book = bestDepth(q.depth);
+    const moneynessPct = spot
+      ? Number((((contract.strike - spot) / spot) * 100).toFixed(2))
+      : null;
     console.log(
       `   ✓ ABOVE THRESHOLD | ${triggerStartTime.toLocaleTimeString()} → ${triggerEndTime.toLocaleTimeString()} | ${changePercent.toFixed(2)}%`
     );
 
+    
     triggers.push({
       instrumentName: contract.name,
       symbol: contract.name,
@@ -399,7 +440,26 @@ async function buildTriggers(symbols) {
       triggerStartPrice,
       triggerEndPrice,
       changePercent: Number(changePercent.toFixed(2)),
-      priceSequence
+      priceSequence,
+
+      token: String(contract.token),
+      lotSize: contract.lotsize || 1,
+      underlyingPrice: spot,
+      moneynessPct,
+      dte: dteFromExpiry(contract.expiry, now),
+      oi: q.opnInterest || 0,
+      bid: book.bid,
+      ask: book.ask,
+      spreadPct: book.spreadPct,
+      totBuyQuan: q.totBuyQuan || 0,
+      totSellQuan: q.totSellQuan || 0,
+      dayOpen: q.open || null,
+      dayHigh: q.high || null,
+      dayLow: q.low || null,
+      windowHigh: candleData.windowHigh || null,
+      windowLow: candleData.windowLow || null,
+      sessionDate: dayIST(triggerEndTime),
+      windowIndex: windowIndexFrom(triggerStartTime)
     });
 
     successCount++;
@@ -432,6 +492,36 @@ async function saveTriggers(triggers) {
   return result;
 }
 
+function bucketWindowIST(now = new Date(), bucket = 'intraday') {
+  const p = getISTParts(now);
+  const pad = (n) => String(n).padStart(2, '0');
+  const day = `${p.year}-${pad(p.month)}-${pad(p.day)}`;
+
+  if (bucket === 'close') {
+    return { bucket, from: `${day} 15:00`, to: `${day} 15:30` };
+  }
+
+  // job starts at :32 or :00/:30 — store the half-hour that just finished
+  const endMin = p.minute >= 32 ? 30 : p.minute >= 30 ? 30 : 0;
+  let endH = p.hour;
+  let startH = endH;
+  let startMin = endMin === 30 ? 0 : 30;
+  if (endMin === 0) {
+    startH = endH - 1;
+    startMin = 30;
+  }
+  // 09:32 stores 09:15–09:30, not 09:00–09:30
+  if (endH === 9 && endMin === 30) {
+    return { bucket, from: `${day} 09:15`, to: `${day} 09:30` };
+  }
+
+  return {
+    bucket,
+    from: `${day} ${pad(startH)}:${pad(startMin)}`,
+    to: `${day} ${pad(endH)}:${pad(endMin)}`
+  };
+}
+
 // ==============================================================
 // Main job
 // ==============================================================
@@ -439,7 +529,10 @@ function dayIST(d = new Date()) {
   return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // YYYY-MM-DD
 }
 
-async function runTriggerJob(symbols) {
+async function runTriggerJob(symbols, opts = {}) {
+  const bucket = opts.bucket || 'intraday';
+  const window = bucketWindowIST(new Date(), bucket);
+
   if (isJobRunning) {
     console.log('⏸️  Previous job still running — skipping this cron');
     await ScanRun.create({
@@ -448,22 +541,30 @@ async function runTriggerJob(symbols) {
       status: 'skipped',
       symbolsCount: symbols?.length || 0,
       triggersFound: 0,
-      dayIST: dayIST()
+      dayIST: dayIST(),
+      bucket: window.bucket,
+      windowFrom: window.from,
+      windowTo: window.to
     });
     return [];
   }
 
   isJobRunning = true;
   const startedAt = new Date();
+  console.log(`📅 Bucket ${window.bucket} | ${window.from} → ${window.to}`);
+
   const run = await ScanRun.create({
     startedAt,
     status: 'running',
     symbolsCount: symbols?.length || 0,
-    dayIST: dayIST(startedAt)
+    dayIST: dayIST(startedAt),
+    bucket: window.bucket,
+    windowFrom: window.from,
+    windowTo: window.to
   });
 
   try {
-    const triggers = await buildTriggers(symbols);
+    const triggers = await buildTriggers(symbols, window);
     await saveTriggers(triggers);
     run.status = 'success';
     run.triggersFound = triggers.length;

@@ -64,7 +64,32 @@ const OptionTriggerSchema = new mongoose.Schema({
   priceSequence: {
     type: [Number],      // Array of 15 numbers
     required: true
-  }
+  },
+  token: String,
+  lotSize: { type: Number, default: 1 },
+  underlyingPrice: Number,
+  underlyingChangePct: Number,
+  moneynessPct: Number,
+  strikeOffset: Number,          // -2..+2 from ATM
+  dte: Number,
+  oi: Number,
+  bid: Number,
+  ask: Number,
+  spreadPct: Number,
+  totBuyQuan: Number,
+  totSellQuan: Number,
+  dayOpen: Number,
+  dayHigh: Number,
+  dayLow: Number,
+  iv: Number,
+  delta: Number,
+  gamma: Number,
+  theta: Number,
+  vega: Number,
+  windowHigh: Number,
+  windowLow: Number,
+  sessionDate: String,           // YYYY-MM-DD IST
+  windowIndex: Number            // 0 = 09:15, 1 = 09:30, ...
 }, {
   timestamps: true       // adds createdAt & updatedAt automatically
 });
